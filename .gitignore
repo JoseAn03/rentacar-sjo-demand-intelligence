@@ -1,0 +1,24 @@
+# datos generados (sintéticos) — nunca subir datos reales de la empresa
+data/raw/*.csv
+data/processed/*.csv
+data/*.db
+data/*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# notebooks / IDE
+.ipynb_checkpoints/
+.vscode/
+.idea/
+.DS_Store
+
+# credenciales y datos reales (JAMÁS subir)
+*.xlsx
+*.xls
+secrets/
+*.env
