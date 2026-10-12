@@ -1,22 +1,24 @@
 #!/usr/bin/env python3
 """
-Dashboard ejecutivo + operativo (Fase 3) — Streamlit.
+Dashboard ejecutivo + operativo — Streamlit.
 
-Vista ejecutiva: KPIs, tendencia, no-show por canal, ingreso.
-Vista operativa: demanda esperada de la semana, horas pico, alertas de no-show.
+Lee de la capa MARTS (agregados materializados + modelo estrella).
 
 Uso:  streamlit run dashboard/app.py
 """
 import os
 import sqlite3
+
 import pandas as pd
 import streamlit as st
 
-BASE = os.path.join(os.path.dirname(__file__), "..")
-DB = os.path.join(BASE, "data", "rentacar.db")
+from config import BASE, MARTS_DB
+
+DB = MARTS_DB
 
 st.set_page_config(page_title="Motor de Demanda SJO", layout="wide")
 st.title("🚗 Motor de Inteligencia de Demanda — Rent-a-Car (SJO)")
+
 
 @st.cache_data
 def cargar():
@@ -33,6 +35,7 @@ def cargar():
     conn.close()
     df["fecha_recogida"] = pd.to_datetime(df["fecha_recogida"])
     return df
+
 
 df = cargar()
 
@@ -66,7 +69,6 @@ else:
     st.header("Vista Operativa")
     hoy = df["fecha_recogida"].max().date()
     st.subheader(f"Demanda esperada — semana del {hoy}")
-    # Última semana completa de datos como proxy de "esta semana".
     ultima = df[df["fecha_recogida"] >= pd.Timestamp(hoy) - pd.Timedelta(days=7)]
     sem = ultima.groupby(ultima["fecha_recogida"].dt.day_name()).agg(
         llegadas=("id_reserva", "count"), noshow=("no_show", "mean"))

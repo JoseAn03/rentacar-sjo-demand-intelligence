@@ -1,6 +1,6 @@
 -- ============================================================
--- Modelo dimensional — Motor de demanda para rent-a-car (SJO)
--- Esquema estrella: 1 tabla de hechos + 6 dimensiones.
+-- Capa MARTS — modelo dimensional (estrella) + agregados listos para
+-- análisis y dashboard.
 -- Motor: SQLite (Fase 1). Migrable a PostgreSQL sin cambios lógicos.
 -- ============================================================
 
@@ -77,3 +77,32 @@ CREATE INDEX IF NOT EXISTS idx_fact_fecha   ON fact_reservas(fecha_key);
 CREATE INDEX IF NOT EXISTS idx_fact_clase   ON fact_reservas(clase_id);
 CREATE INDEX IF NOT EXISTS idx_fact_noshow  ON fact_reservas(no_show);
 CREATE INDEX IF NOT EXISTS idx_fact_anticip ON fact_reservas(anticipacion_dias);
+
+-- ---------- Agregados (marts analíticos materializados) ----------
+-- Estos son los "one big table" / agregados que consume el dashboard y los
+-- modelos, evitando recalcular joins en cada lectura.
+
+-- Demanda diaria efectiva (llegadas) por día y categoría.
+CREATE TABLE IF NOT EXISTS mart_demanda_diaria (
+    fecha        DATE NOT NULL,
+    categoria    TEXT NOT NULL,
+    llegadas     INTEGER NOT NULL,
+    no_shows     INTEGER NOT NULL,
+    PRIMARY KEY (fecha, categoria)
+);
+
+-- Tasa de no-show por canal.
+CREATE TABLE IF NOT EXISTS mart_noshow_canal (
+    canal         TEXT PRIMARY KEY,
+    reservas      INTEGER NOT NULL,
+    no_shows      INTEGER NOT NULL,
+    tasa_noshow   REAL NOT NULL
+);
+
+-- Ingreso efectivo por categoría de vehículo.
+CREATE TABLE IF NOT EXISTS mart_ingreso_categoria (
+    categoria         TEXT PRIMARY KEY,
+    reservas          INTEGER NOT NULL,
+    ingreso_promedio  REAL NOT NULL,
+    ingreso_total     REAL NOT NULL
+);

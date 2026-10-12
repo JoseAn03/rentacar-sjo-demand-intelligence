@@ -36,45 +36,56 @@ anticipar:
 
 ## 3. Arquitectura
 
+El pipeline sigue una arquitectura en capas (**medallón**): fuente → staging →
+marts → dashboard, con tests y programación. Diagrama completo en
+[`docs/pipeline.md`](docs/pipeline.md).
+
 ```
-data/raw/reservas_sinteticas.csv   ← generador (datos sintéticos)
-        ↓  src/ingesta.py (ETL)
-data/rentacar.db                   ← modelo estrella (SQLite)
-        ↓  src/analisis.py, src/modelo_*.py
-data/processed/*.png               ← gráficos y métricas
-        ↓  dashboard/app.py (Streamlit)
-README + caso de negocio
+FUENTE                 STAGING                 MARTS                   DASHBOARD
+(data/raw)             (data/staging)          (data/marts)            (dashboard)
+─────────              ─────────────           ───────────             ──────────
+generar_datos.py  -->  staging.py        -->   marts.py          -->   app.py
+CSV sintético          limpia + tipa +         modelo estrella +       Streamlit
+~57k reservas          auditoría               agregados materializados
 ```
 
-- **Ingesta y limpieza (Python)**: `src/generar_datos.py` + `src/ingesta.py`.
-- **Base de datos**: SQLite con modelo dimensional (tabla de hechos de reservas
-  + dimensiones de fecha, vehículo, ubicación, tarifa, canal y cliente).
-- **Análisis y modelos (Python)**: KPIs, pronóstico de demanda y clasificación
-  de no-show.
+- **Fuente (raw)**: `src/generar_datos.py` produce el dataset sintético.
+- **Staging**: `src/staging.py` limpia, tipa y audita la fuente (`staging.db`).
+- **Marts**: `src/marts.py` construye el modelo dimensional y agregados (`marts.db`).
+- **Validación**: `src/validar.py` ejecuta 12 checks de calidad (gate de CI).
 - **Dashboard**: Streamlit con vista ejecutiva y operativa.
-- **Documentación**: README, diagrama, diccionario de datos y caso de negocio.
+- **Orquestador**: `src/pipeline.py` encadena las etapas (fail-fast).
+- **Tests**: suite de pytest en `tests/`.
+- **Programación**: cron local + GitHub Actions (`.github/workflows/pipeline.yml`).
 
 ## 4. Estructura del repositorio
 
 ```
 rentacar-sjo-demand-intelligence/
 ├── data/
-│   ├── raw/          # CSV sintético (generado, no versionado)
+│   ├── raw/          # fuente: CSV sintético (generado, no versionado)
+│   ├── staging/      # staging.db (limpio, auditado)
+│   ├── marts/        # marts.db (estrella + agregados)
 │   └── processed/    # gráficos y salidas (generados)
 ├── sql/
-│   ├── schema.sql        # modelo dimensional
-│   ├── validaciones.sql  # checks de calidad de datos
-│   └── kpis.sql          # consultas analíticas
+│   ├── schema_staging.sql  # esquema de staging + auditoría
+│   └── schema_marts.sql    # dimensiones + hechos + agregados
 ├── src/
-│   ├── generar_datos.py  # generador sintético
-│   ├── ingesta.py        # ETL a SQLite
-│   ├── analisis.py       # EDA + KPIs
-│   ├── modelo_no_show.py # clasificación de no-show
-│   └── modelo_demanda.py # pronóstico de demanda
+│   ├── config.py            # rutas y constantes compartidas
+│   ├── generar_datos.py     # FUENTE
+│   ├── staging.py           # STAGING
+│   ├── marts.py             # MARTS
+│   ├── validar.py           # VALIDACIÓN
+│   ├── analisis.py          # EDA + KPIs
+│   ├── modelo_no_show.py    # clasificación de no-show
+│   ├── modelo_demanda.py    # pronóstico de demanda
+│   └── pipeline.py          # ORQUESTADOR (fail-fast)
+├── tests/                   # pytest (staging, marts, validación)
 ├── dashboard/
-│   └── app.py            # Streamlit (ejecutiva + operativa)
-├── notebooks/            # exploración (opcional)
-├── docs/                 # problema, arquitectura, caso de negocio, relato
+│   └── app.py               # Streamlit (ejecutiva + operativa)
+├── .github/workflows/       # CI/CD (pipeline + tests)
+├── notebooks/               # exploración (opcional)
+├── docs/                    # pipeline, arquitectura, caso de negocio, relato
 ├── requirements.txt
 └── README.md
 ```
@@ -87,20 +98,22 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# 2. Generar datos sintéticos (57k+ reservas)
-python3 src/generar_datos.py
+# 2. Pipeline completo (fuente -> staging -> marts -> validar)
+python3 src/pipeline.py
 
-# 3. Cargar a la base de datos (modelo estrella)
-python3 src/ingesta.py
+# ...o por etapas:
+python3 src/generar_datos.py   # fuente
+python3 src/staging.py         # staging
+python3 src/marts.py           # marts
+python3 src/validar.py         # validación
 
-# 4. Análisis y KPIs
+# 3. Tests
+python3 -m pytest tests/ -v
+
+# 4. Análisis, modelos y dashboard
 python3 src/analisis.py
-
-# 5. Modelos
 python3 src/modelo_no_show.py
 python3 src/modelo_demanda.py
-
-# 6. Dashboard
 streamlit run dashboard/app.py
 ```
 
@@ -141,6 +154,8 @@ streamlit run dashboard/app.py
 - Pronóstico desagregado por categoría de vehículo.
 - Incluir Semana Santa y feriados como regresores explícitos en el modelo.
 - Migrar SQLite → PostgreSQL y añadir dbt para el modelo dimensional.
+- Ampliar la suite de tests (tests de los modelos y del dashboard).
 
-Ver [docs/](docs/) para el caso de negocio, el relato de entrevista y el
-diccionario de datos completo.
+Ver [docs/pipeline.md](docs/pipeline.md) para el diagrama del pipeline, los
+tests y la programación; y [docs/](docs/) para el caso de negocio, el relato de
+entrevista y el diccionario de datos completo.

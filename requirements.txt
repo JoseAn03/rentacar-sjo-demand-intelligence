@@ -1,3 +1,5 @@
+# Motor de Inteligencia de Demanda — Rent-a-Car (SJO)
+# Dependencias del pipeline + tests.
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
@@ -6,3 +8,6 @@ statsmodels>=0.14
 streamlit>=1.30
 openpyxl>=3.1
 prophet>=1.1  # opcional: solo si usas Prophet en Fase 4
+
+# Testing
+pytest>=8.0

@@ -1,44 +1,8 @@
 # Arquitectura del proyecto
 
-## Diagrama de flujo
-
-```
-┌──────────────────────┐
-│  Reportes de reservas │   (datos reales: SOLO para entender estructura)
-└──────────┬───────────┘
-           │  (nunca se publican)
-           ▼
-┌──────────────────────────────┐
-│ src/generar_datos.py          │   genera dataset SINTÉTICO realista
-│  (estacionalidad CR, feriados, │   (57k+ reservas)
-│   Semana Santa, clases, tarifas)│
-└──────────────┬───────────────┘
-               ▼
-        data/raw/reservas_sinteticas.csv
-               │
-               ▼
-┌──────────────────────────────┐
-│ src/ingesta.py (ETL)          │   limpieza + carga
-└──────────────┬───────────────┘
-               ▼
-┌──────────────────────────────┐
-│ data/rentacar.db (SQLite)     │   modelo estrella
-│  fact_reservas + 6 dimensiones │
-└──────┬───────────────┬────────┘
-       │               │
-       ▼               ▼
-┌─────────────┐  ┌───────────────────┐
-│ analisis.py │  │ modelo_no_show.py │
-│ (KPIs)      │  │ modelo_demanda.py │
-└──────┬──────┘  └────────┬──────────┘
-       │                  │
-       └────────┬─────────┘
-                ▼
-        data/processed/*.png
-                │
-                ▼
-      dashboard/app.py (Streamlit)
-```
+> El pipeline por capas (fuente → staging → marts → dashboard), los tests y la
+> programación se documentan en [`pipeline.md`](pipeline.md). Este archivo
+> describe el modelo dimensional y las decisiones técnicas.
 
 ## Modelo dimensional (estrella)
 

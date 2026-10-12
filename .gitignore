@@ -3,6 +3,9 @@ data/raw/*.csv
 data/processed/*.csv
 data/*.db
 data/*.sqlite
+data/staging/
+data/marts/
+data/processed/*.png
 
 # Python
 __pycache__/

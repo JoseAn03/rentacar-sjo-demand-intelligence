@@ -306,7 +306,7 @@ def generar(desde="2025-01-01", hasta="2026-09-30"):
     df = df.sort_values(["fecha_recogida", "fecha_reserva"]).reset_index(drop=True)
     return df
 
-if __name__ == "__main__":
+def main():
     df = generar()
     out = os.path.join(OUT_DIR, "reservas_sinteticas.csv")
     df.to_csv(out, index=False)
@@ -315,3 +315,7 @@ if __name__ == "__main__":
     print(f"Rango fechas: {df['fecha_recogida'].min().date()} -> {df['fecha_recogida'].max().date()}")
     print(f"Clases: {df['clase'].nunique()} | Categorías: {df['categoria'].nunique()}")
     print(f"Escrito en: {out}")
+
+
+if __name__ == "__main__":
+    main()
